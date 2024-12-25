@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Data Viewer</title>
+    <script type="module">
+        // Import Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-app.js";
+        import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.17.2/firebase-database.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBe7Bvrn9LGXGS6olUeoErRnuojY1yQmCc",
+            authDomain: "acfhub-10a87.firebaseapp.com",
+            databaseURL: "https://acfhub-10a87-default-rtdb.firebaseio.com/",
+            projectId: "acfhub-10a87",
+            storageBucket: "acfhub-10a87.appspot.com",
+            messagingSenderId: "791737315833",
+            appId: "1:791737315833:web:5527bba867fae510338d28",
+            measurementId: "G-TXSBSME944"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Fetch data based on folder selection
+        async function fetchData(folder) {
+            const folderRef = ref(db, folder);
+            const dataContainer = document.getElementById('dataContainer');
+            const searchInput = document.getElementById('searchInput');
+            dataContainer.innerHTML = "Loading...";
+
+            try {
+                const snapshot = await get(folderRef);
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    renderData(data);
+                    searchInput.disabled = false; // Enable search after data loads
+                } else {
+                    dataContainer.innerHTML = `<p>No data found in the '${folder}' folder.</p>`;
+                    searchInput.disabled = true; // Disable search if no data
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                dataContainer.innerHTML = "<p>Error loading data. Check console for details.</p>";
+            }
+        }
+
+        // Render data to the page
+        function renderData(data) {
+            const dataContainer = document.getElementById('dataContainer');
+            dataContainer.innerHTML = ""; // Clear previous data
+
+            for (const folder in data) {
+                const details = data[folder];
+                const box = document.createElement('div');
+                box.className = 'data-box';
+                box.setAttribute('data-username', details.username.toLowerCase());
+                box.setAttribute('data-email', details.email.toLowerCase());
+                box.setAttribute('data-transaction-id', details.transactionId.toLowerCase());
+
+                box.innerHTML = `
+                    <p><strong>Username:</strong> ${details.username}</p>
+                    <p><strong>Email:</strong> ${details.email}</p>
+                    <p><strong>Transaction ID:</strong> ${details.transactionId}</p>
+                    <p><strong>Payment Method:</strong> ${details.paymentMethod}</p>
+                    <p><strong>WhatsApp:</strong> ${details.whatsapp}</p>
+                    <button onclick="verifyData('${folder}', ${JSON.stringify(details).replace(/"/g, '&quot;')})">Verify</button>
+                `;
+                dataContainer.appendChild(box);
+            }
+        }
+
+        // Filter data based on search input
+        function filterData() {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const boxes = document.querySelectorAll('.data-box');
+
+            boxes.forEach(box => {
+                const username = box.getAttribute('data-username');
+                const email = box.getAttribute('data-email');
+                const transactionId = box.getAttribute('data-transaction-id');
+
+                if (username.includes(searchQuery) || email.includes(searchQuery) || transactionId.includes(searchQuery)) {
+                    box.style.display = "block";
+                } else {
+                    box.style.display = "none";
+                }
+            });
+        }
+
+        // Verify data and move to 'completed' folder
+        async function verifyData(folderName, details) {
+            const completedRef = ref(db, "completed");
+            try {
+                // Check if 'completed' folder exists
+                const completedSnapshot = await get(completedRef);
+                if (!completedSnapshot.exists()) {
+                    await set(completedRef, {}); // Create 'completed' folder
+                }
+
+                // Move data to 'completed' folder
+                const completedFolderRef = ref(db, `completed/${folderName}`);
+                await set(completedFolderRef, details);
+
+                // Remove data from the current folder
+                const paymentsFolderRef = ref(db, `payments/${folderName}`);
+                await remove(paymentsFolderRef);
+
+                alert(`Data for ${details.username} has been verified and moved to the 'completed' folder.`);
+                const folderSelect = document.getElementById('folderSelect');
+                fetchData(folderSelect.value); // Refresh data
+            } catch (error) {
+                console.error("Error verifying data:", error);
+                alert("An error occurred while verifying the data. Check the console for details.");
+            }
+        }
+
+        // Attach functions to the global scope
+        window.verifyData = verifyData;
+        window.filterData = filterData;
+
+        // Fetch data on folder change
+        window.onload = () => {
+            const folderSelect = document.getElementById('folderSelect');
+            fetchData(folderSelect.value);
+            folderSelect.addEventListener('change', () => fetchData(folderSelect.value));
+        };
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .data-box {
+            background: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .data-box p {
+            margin: 5px 0;
+        }
+
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007BFF;
+            color: #ffffff;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #controls {
+            margin-bottom: 20px;
+        }
+
+        select, input {
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>ACFHUB PAYMENY VERFIER </h1>
+    <div id="controls">
+        <select id="folderSelect">
+            <option value="payments">Payments</option>
+            <option value="completed">Completed</option>
+        </select>
+        <input type="text" id="searchInput" placeholder="Search by username, email, or transaction ID" oninput="filterData()" disabled />
+    </div>
+    <div id="dataContainer"></div>
+</body>
+</html>

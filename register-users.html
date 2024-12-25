@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signup Page</title>
+  <style>
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .signup-container {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+      width: 300px;
+      text-align: center;
+    }
+    .signup-container h1 {
+      margin-bottom: 20px;
+    }
+    .input-field {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 5px;
+    }
+    .submit-btn {
+      width: 100%;
+      padding: 10px;
+      background: #0f9b0f;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .submit-btn:hover {
+      background: #067306;
+    }
+  </style>
+</head>
+<body>
+  <div class="signup-container">
+    <h1>Signup</h1>
+    <input type="email" id="email" class="input-field" placeholder="Enter Email" />
+    <input type="password" id="password" class="input-field" placeholder="Enter Password" />
+    <button class="submit-btn" onclick="signup()">Sign Up</button>
+  </div>
+
+  <!-- Firebase Libraries -->
+  <script type="module">
+    // Import Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyADxHKX18EOGDgltoM8YpOyImyAePF9_18",
+      authDomain: "youiu-6bf31.firebaseapp.com",
+      databaseURL: "https://youiu-6bf31-default-rtdb.firebaseio.com",
+      projectId: "youiu-6bf31",
+      storageBucket: "youiu-6bf31.firebasestorage.app",
+      messagingSenderId: "1027867582091",
+      appId: "1:1027867582091:web:8ccb3d9ec9a54d36eebe8e"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+
+    // Initialize Realtime Database
+    const database = getDatabase(app);
+
+    // Signup function
+    window.signup = function signup() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      if (email && password) {
+        // Replace invalid characters in email
+        const emailKey = email.replace(/\./g, '_').replace(/@/g, '_');
+
+        // Reference to the main_folder/users/{emailKey}
+        const userRef = ref(database, `main_folder/users/${emailKey}`);
+
+        // Set user data
+        set(userRef, {
+          email: email,
+          password: password
+        })
+        .then(() => {
+          alert('Signup Successful!');
+        })
+        .catch((error) => {
+          console.error("Error: ", error);
+          alert('Error signing up. Please try again.');
+        });
+      } else {
+        alert('Please fill in all fields');
+      }
+    };
+  </script>
+</body>
+</html>
